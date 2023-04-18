@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-sample-with-logs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs-sample-with-logs
+  template:
+    metadata:
+      labels:
+        app: nodejs-sample-with-logs
+    spec:
+      containers:
+        - name: app
+          image: 157112/sample-node-app:v2
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: pm2-logs
+              mountPath: /var/log/pm2
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+        - name: log-sidecar
+          image: busybox
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo '#!/bin/sh' > /tmp/tail-logs.sh
+              echo 'while true; do' >> /tmp/tail-logs.sh
+              echo '  for f in /home/node/.pm2/logs/*.log; do' >> /tmp/tail-logs.sh
+              echo '    [ -e "$f" ] || continue' >> /tmp/tail-logs.sh
+              echo '    tail -n+1 -F "$f" &' >> /tmp/tail-logs.sh
+              echo '  done' >> /tmp/tail-logs.sh
+              echo '  wait' >> /tmp/tail-logs.sh
+              echo 'done' >> /tmp/tail-logs.sh
+              chmod +x /tmp/tail-logs.sh
+              /tmp/tail-logs.sh
+          volumeMounts:
+            - name: pm2-logs
+              mountPath: /home/node/.pm2/logs
+          resources:
+            limits:
+              cpu: 50m
+              memory: 64Mi
+            requests:
+              cpu: 20m
+              memory: 32Mi
+      volumes:
+        - name: pm2-logs
+          persistentVolumeClaim:
+            claimName: pm2-log-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodejs-sample-service
+  labels:
+    app: nodejs-sample-with-logs
+spec:
+  selector:
+    app: nodejs-sample-with-logs
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  
+
+
