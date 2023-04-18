@@ -21,7 +21,9 @@ Create a Dockerfile in the project directory with the following content:
 Build the Docker image by running the following command in the project directory:
 # docker build -t sample-node-app .
 Once the image is built, you can run the container with the following command:
-# docker run -p 3000:3000 sample-node-app
+# docker run -it --name sample-node-app -p 3000:3000 sample-node-app
+=======================================================================================================================================
+
 Now, the sample Node.js application should be running inside a Docker container managed by PM2 and accessible at http://localhost:3000.
 
 what is npx
