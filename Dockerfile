@@ -1,32 +1,29 @@
-# Dockerfile
-# Use the official Node.js image as the base image
-FROM node:14 as build
+# Use an official Node.js runtime as the base image
+FROM node:14
 
-# Set the working directory inside the container
+# Set the working directory
 WORKDIR /usr/src/app
 
-# Copy package*.json to the working directory
+# Copy package.json and package-lock.json into the working directory
 COPY package*.json ./
 
-# Install the application's dependencies
+# Install any needed packages
 RUN npm ci
 
-# Copy the application's source code to the working directory
+# Copy the app source code into the working directory
 COPY . .
 
-# Use a smaller, more secure base image for the runtime environment
-FROM node:14-alpine
+# Install PM2 globally
+RUN npm install -g pm2
 
-# Set the working directory inside the container
-WORKDIR /usr/src/app
+# Create log directory for PM2 logs and set ownership to the node user
+RUN mkdir -p /var/log/my-app && chown -R node:node /var/log/my-app
 
-# Copy only the production dependencies and the built app from the build stage
-COPY --from=build /usr/src/app/node_modules /usr/src/app/node_modules
-COPY --from=build /usr/src/app/app.js /usr/src/app/app.js
-COPY --from=build /usr/src/app/process.yml /usr/src/app/process.yml
+# Switch to the node user
+USER node
 
-# Expose the application's port
+# Expose the port the app runs on
 EXPOSE 3000
 
-# Start the application with PM2
-CMD ["npx", "pm2-runtime", "start", "process.yml"]
+# Define the command to run the app using PM2
+CMD ["pm2-runtime", "ecosystem.config.js"]
