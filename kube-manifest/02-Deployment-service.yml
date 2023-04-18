@@ -31,3 +31,19 @@ spec:
       - name: nginx-config-volume
         configMap:
           name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-app-service
+  labels:
+    app: sample-node-app
+spec:
+  selector:
+    app: sample-node-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+
